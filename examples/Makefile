@@ -21,8 +21,8 @@ CLANG_BPF_SYS_INCLUDES = $(shell $(CC) -v -E - </dev/null 2>&1 \
 
 include ../Makefile.libbpf
 
-$(OBJ): %.bpf.o: %.bpf.c ../include/$(ARCH)/vmlinux.h $(LIBBPF_DEPS)
-	$(CC) -mcpu=v3 -g -O2 -Wall -Werror -D__TARGET_ARCH_$(ARCH) $(CFLAGS) $(CLANG_BPF_SYS_INCLUDES) -I../include/$(ARCH) $(LIBBPF_CFLAGS) -c -target bpf $< -o $@
+$(OBJ): %.bpf.o: %.bpf.c ../include/$(ARCH)/vmlinux.h ../include/$(ARCH)/blkdev.h $(LIBBPF_DEPS)
+	$(CC) -mcpu=v3 -g -Qmacro-redefined -O2 -Wall -Werror -D__TARGET_ARCH_$(ARCH) $(CFLAGS) $(CLANG_BPF_SYS_INCLUDES) -I../include/$(ARCH) -I/usr/src/kernels/6.5.5-200.fc38.x86_64/include/ -I/usr/src/kernels/6.5.5-200.fc38.x86_64/arch/x86/include/generated/ -I/usr/src/kernels/6.5.5-200.fc38.x86_64/arch/x86/include/ $(LIBBPF_CFLAGS) -c -target bpf $< -o $@
 
 .PHONY: clean
 clean:
