@@ -21,6 +21,14 @@ struct disk_latency_key_t {
     u64 slot;
 };
 
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, MAX_DISKS);
+    __type(key, struct disk_latency_key_t);
+    // __type(key, u64); // Use a 64-bit key for I/O sizes
+    __type(value, u64);
+} io_size_histogram SEC(".maps");
+
 extern int LINUX_KERNEL_VERSION __kconfig;
 
 struct {
@@ -109,6 +117,7 @@ int block_rq_complete(struct bpf_raw_tracepoint_args *ctx)
     struct gendisk *disk;
     struct request *rq = (struct request *) ctx->args[0];
     struct disk_latency_key_t latency_key = {};
+    struct disk_latency_key_t io_size_key = {};
 
     tsp = bpf_map_lookup_elem(&start, &rq);
     if (!tsp) {
@@ -132,6 +141,13 @@ int block_rq_complete(struct bpf_raw_tracepoint_args *ctx)
     latency_key.slot = latency_slot;
     latency_key.dev = disk ? MKDEV(BPF_CORE_READ(disk, major), BPF_CORE_READ(disk, first_minor)) : 0;
     latency_key.op = flags & REQ_OP_MASK;
+
+    io_size_key.slot = BPF_CORE_READ(rq, __sector) * 512;  // Assuming a 512-byte sector size
+    io_size_key.dev = disk ? MKDEV(BPF_CORE_READ(disk, major), BPF_CORE_READ(disk, first_minor)) : 0;
+    io_size_key.op = flags & REQ_OP_MASK;
+
+    // Update the I/O size histogram map
+    increment_map(&io_size_histogram, &io_size_key, 1);
 
     increment_map(&bio_latency_seconds, &latency_key, 1);
 

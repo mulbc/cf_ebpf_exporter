@@ -24,3 +24,26 @@ metrics:
           size: 8
           decoders:
             - name: uint
+    - name: io_size_histogram
+      help: Block IO size histogram
+      bucket_type: exp2
+      bucket_min: 0
+      bucket_max: 15
+      bucket_multiplier: 1024 # kibibytes to bytes
+      labels:
+        - name: device
+          size: 4
+          decoders:
+            - name: majorminor
+        - name: operation
+          size: 4
+          decoders:
+            - name: uint
+            - name: static_map
+              static_map:
+                1: read
+                2: write
+        - name: bucket
+          size: 8
+          decoders:
+            - name: uint
